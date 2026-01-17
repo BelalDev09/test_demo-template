@@ -55,9 +55,11 @@ class ProductController extends Controller
 
     public function show($id)
     {
-        return response()->json(
-            Product::findOrFail($id)
-        );
+        $product = Product::findOrFail($id);
+        return response()->json([
+            'message' => 'Product show successfully',
+            'data' => $product
+        ]);
     }
 
     public function update(Request $request, $id)
