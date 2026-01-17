@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 
+use Storage;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
@@ -25,7 +26,7 @@ class ProductController extends Controller
             'price'       => 'required|numeric',
             'status'      => 'required|boolean',
            'medias'   => 'nullable|array',
-'medias.*' => 'image|mimes:jpg,jpeg,png,webp|max:10240',
+'medias.*' => 'file|mimes:jpg,jpeg,png,webp|max:10240',
 
         ]);
         
@@ -73,18 +74,30 @@ class ProductController extends Controller
             'price'       => 'sometimes|numeric',
             'status'      => 'sometimes|boolean',
             'medias'   => 'nullable|array',
-            'medias.*' => 'image|mimes:jpg,jpeg,png,webp|max:10240',
+            'medias.*' => 'file|mimes:jpg,jpeg,png,webp|max:10240',
 
         ]);
 
-        $mediaPaths = $product->medias ?? [];
+       
+  // default → old medias
+    $mediaPaths = $product->medias ?? [];
 
-      
-        if ($request->hasFile('medias')) {
-            foreach ($request->file('medias') as $file) {
-                $mediaPaths[] = $file->store('products', 'public');
-            }
+    // ✅ If new medias uploaded → replace old
+    if ($request->hasFile('medias')) {
+
+        // 🧹 delete old files
+        foreach ($mediaPaths as $oldMedia) {
+            Storage::disk('public')->delete($oldMedia);
         }
+
+        // reset array
+        $mediaPaths = [];
+
+        // save new files
+        foreach ($request->file('medias') as $file) {
+            $mediaPaths[] = $file->store('products', 'public');
+        }
+    }
 
         $product->update([
             'category_id' => $request->category_id ?? $product->category_id,
